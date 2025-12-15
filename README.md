@@ -32,17 +32,45 @@ WebRadio9 consists of 7 microservices:
 
 ## Quick Start
 
-### Prerequisites
+### Docker Deployment (Recommended)
+
+**Prerequisites:**
+- Docker and Docker Compose
+- Git
+
+**Installation:**
+```bash
+# Clone the repository
+git clone https://github.com/pyRammos/webradio9.git
+cd webradio9
+
+# Start all services (MySQL, RabbitMQ, WebRadio9)
+docker compose up -d
+
+# Access the application
+open http://localhost:5000
+```
+
+**Default login:** `admin` / `admin123`
+
+**Services:**
+- **WebRadio9**: http://localhost:5000
+- **RabbitMQ Management**: http://localhost:15672 (webradio/webradio_pass)
+
+### Manual Installation
+
+**Prerequisites:**
 - Python 3.8+
 - FFmpeg
-- SQLite (included)
+- MySQL or SQLite
+- RabbitMQ
 - Virtual environment support
 
-### Installation
+**Installation:**
 
 1. Clone the repository:
 ```bash
-git clone https://github.com/yourusername/webradio9.git
+git clone https://github.com/pyRammos/webradio9.git
 cd webradio9
 ```
 
@@ -72,6 +100,33 @@ python run_services.py
 6. Access the web interface at `http://localhost:5000`
 
 Default login: `admin` / `password`
+
+## Docker Deployment
+
+### Using Docker Hub Image
+```bash
+# Pull and run the latest image
+docker pull teleram/webradio9:latest
+docker run -p 5000:5000 teleram/webradio9:latest
+```
+
+### Full Stack with Docker Compose
+```bash
+# Clone and deploy complete stack
+git clone https://github.com/pyRammos/webradio9.git
+cd webradio9
+docker compose up -d
+```
+
+### Custom Configuration
+```bash
+# Copy example config and customize
+cp config/settings.cfg.example config/settings.cfg
+# Edit config/settings.cfg with your settings
+docker compose up -d
+```
+
+For detailed Docker deployment instructions, see [DOCKER.md](DOCKER.md).
 
 ## Configuration
 
