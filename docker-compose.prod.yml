@@ -17,10 +17,6 @@ services:
 
   webradio9:
     image: teleram/webradio9:latest
-    environment:
-      - DB_PASSWORD_FILE=/run/secrets/mysql_password
-      - RABBITMQ_PASSWORD_FILE=/run/secrets/rabbitmq_password
-      - FLASK_ENV=production
     secrets:
       - mysql_password
       - rabbitmq_password

@@ -3,14 +3,14 @@ set -e
 
 # Wait for database to be ready
 echo "Waiting for MySQL to be ready..."
-while ! mysqladmin ping -h"$DB_HOST" -P"$DB_PORT" -u"$DB_USER" -p"$DB_PASSWORD" --silent; do
+while ! mysqladmin ping -h"mysql" -P"3306" -u"webradio" -p"webradio_pass" --silent; do
     sleep 1
 done
 echo "MySQL is ready!"
 
 # Wait for RabbitMQ to be ready
 echo "Waiting for RabbitMQ to be ready..."
-while ! nc -z "$RABBITMQ_HOST" "$RABBITMQ_PORT"; do
+while ! nc -z "rabbitmq" "5672"; do
     sleep 1
 done
 echo "RabbitMQ is ready!"

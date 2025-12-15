@@ -47,16 +47,6 @@ services:
   webradio9:
     image: teleram/webradio9:latest
     container_name: webradio9-app
-    environment:
-      - DB_HOST=mysql
-      - DB_PORT=3306
-      - DB_NAME=webradio9
-      - DB_USER=webradio
-      - DB_PASSWORD=webradio_pass
-      - RABBITMQ_HOST=rabbitmq
-      - RABBITMQ_PORT=5672
-      - RABBITMQ_USER=webradio
-      - RABBITMQ_PASSWORD=webradio_pass
     volumes:
       - recordings_data:/app/recordings
       - logs_data:/app/logs

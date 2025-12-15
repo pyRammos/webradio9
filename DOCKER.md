@@ -58,17 +58,6 @@ The `config/` folder is mounted into the container, allowing you to customize:
 - Timezone settings
 - Service ports
 
-### Environment Variables
-- `DB_HOST`: MySQL hostname (default: mysql)
-- `DB_PORT`: MySQL port (default: 3306)
-- `DB_NAME`: Database name (default: webradio9)
-- `DB_USER`: Database user (default: webradio)
-- `DB_PASSWORD`: Database password
-- `RABBITMQ_HOST`: RabbitMQ hostname (default: rabbitmq)
-- `RABBITMQ_PORT`: RabbitMQ port (default: 5672)
-- `RABBITMQ_USER`: RabbitMQ user (default: webradio)
-- `RABBITMQ_PASSWORD`: RabbitMQ password
-
 ### Volumes
 - `recordings_data`: Audio recordings storage
 - `logs_data`: Application logs
