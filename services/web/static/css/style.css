@@ -1,0 +1,32 @@
+body {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+}
+
+.sidebar {
+    min-height: calc(100vh - 56px);
+    padding-top: 1rem;
+}
+
+.list-group-item {
+    border: none;
+    border-radius: 0;
+}
+
+.list-group-item.active {
+    background-color: #0d6efd;
+    border-color: #0d6efd;
+}
+
+.list-group-item:hover {
+    background-color: #f8f9fa;
+}
+
+.list-group-item.active:hover {
+    background-color: #0d6efd;
+}
+
+footer {
+    margin-top: auto;
+}

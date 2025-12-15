@@ -1,0 +1,310 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container-fluid h-100">
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="{{ url_for('index') }}">
+                <i class="fas fa-radio"></i> WebRadio9
+            </a>
+            <div class="navbar-nav ms-auto">
+                <a class="nav-link" href="{{ url_for('logout') }}">
+                    <i class="fas fa-sign-out-alt"></i> Logout
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="row h-100">
+        <div class="col-md-2 bg-light sidebar">
+            <div class="list-group list-group-flush">
+                <a href="{{ url_for('index') }}" class="list-group-item list-group-item-action">
+                    <i class="fas fa-tachometer-alt"></i> Dashboard
+                </a>
+                <a href="{{ url_for('stations') }}" class="list-group-item list-group-item-action">
+                    <i class="fas fa-broadcast-tower"></i> Stations
+                </a>
+                <a href="{{ url_for('recordings') }}" class="list-group-item list-group-item-action">
+                    <i class="fas fa-microphone"></i> Recordings
+                </a>
+                <a href="{{ url_for('podcasts') }}" class="list-group-item list-group-item-action active">
+                    <i class="fas fa-podcast"></i> Podcasts
+                </a>
+            </div>
+        </div>
+
+        <div class="col-md-5 border-end">
+            <div class="p-3 bg-light rounded-start">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5 class="mb-0">Podcasts</h5>
+                    <button class="btn btn-primary btn-sm" onclick="showCreatePodcast()">
+                        <i class="fas fa-plus"></i> Create Podcast
+                    </button>
+                </div>
+                <div id="podcasts-list" class="list-group">
+                    <!-- Podcasts will be loaded here -->
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-5">
+            <div class="p-3">
+                <div id="create-podcast-form" style="display: none;">
+                    <h5>Create New Podcast</h5>
+                    <form onsubmit="createPodcast(event)" enctype="multipart/form-data">
+                        <div class="mb-3">
+                            <label class="form-label">Title</label>
+                            <input type="text" class="form-control" id="podcast-title" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Description</label>
+                            <textarea class="form-control" id="podcast-description" rows="3"></textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Author</label>
+                            <input type="text" class="form-control" id="podcast-author">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Email</label>
+                            <input type="email" class="form-control" id="podcast-email">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Category</label>
+                            <select class="form-control" id="podcast-category">
+                                <option value="Technology">Technology</option>
+                                <option value="News">News</option>
+                                <option value="Music">Music</option>
+                                <option value="Entertainment">Entertainment</option>
+                                <option value="Education">Education</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Podcast Image</label>
+                            <input type="file" class="form-control" id="podcast-image" accept="image/*">
+                            <small class="form-text text-muted">Upload a square image (recommended: 1400x1400px or larger)</small>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Create</button>
+                        <button type="button" class="btn btn-secondary" onclick="hideCreatePodcast()">Cancel</button>
+                    </form>
+                </div>
+                
+                <div id="podcast-details" style="display: none;">
+                    <h5 id="podcast-title-display"></h5>
+                    <div id="podcast-info"></div>
+                    <div class="mt-3">
+                        <button class="btn btn-warning btn-sm me-2" onclick="editPodcast()">
+                            <i class="fas fa-edit"></i> Edit
+                        </button>
+                        <button class="btn btn-info btn-sm me-2" onclick="viewPublicPodcast()">
+                            <i class="fas fa-external-link-alt"></i> View Public
+                        </button>
+                        <button class="btn btn-success btn-sm me-2" onclick="copyRSSLink()">
+                            <i class="fas fa-rss"></i> Copy RSS
+                        </button>
+                        <button class="btn btn-danger btn-sm" onclick="deletePodcast()">
+                            <i class="fas fa-trash"></i> Delete Podcast
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let selectedPodcast = null;
+
+function loadPodcasts() {
+    fetch('/api/podcasts')
+        .then(response => response.json())
+        .then(podcasts => {
+            const list = document.getElementById('podcasts-list');
+            list.innerHTML = '';
+            
+            podcasts.forEach(podcast => {
+                const item = document.createElement('div');
+                item.className = 'list-group-item list-group-item-action';
+                item.onclick = () => selectPodcast(podcast);
+                
+                item.innerHTML = `
+                    <div class="d-flex w-100 justify-content-between">
+                        <h6 class="mb-1">${podcast.title}</h6>
+                        <small>${podcast.episode_count} episodes</small>
+                    </div>
+                    <p class="mb-1">${podcast.description || 'No description'}</p>
+                `;
+                
+                list.appendChild(item);
+            });
+        });
+}
+
+function selectPodcast(podcast) {
+    selectedPodcast = podcast;
+    document.getElementById('podcast-title-display').textContent = podcast.title;
+    
+    const info = document.getElementById('podcast-info');
+    let imageHtml = '';
+    if (podcast.image_url) {
+        imageHtml = `<div class="mb-2"><img src="${podcast.image_url}" alt="Podcast Image" style="max-width: 150px; max-height: 150px;" class="img-thumbnail"></div>`;
+    }
+    
+    info.innerHTML = `
+        ${imageHtml}
+        <p><strong>Description:</strong> ${podcast.description || 'None'}</p>
+        <p><strong>Author:</strong> ${podcast.author || 'Not specified'}</p>
+        <p><strong>Email:</strong> ${podcast.email || 'Not specified'}</p>
+        <p><strong>Category:</strong> ${podcast.category || 'Not specified'}</p>
+        <p><strong>Language:</strong> ${podcast.language || 'en-GB'}</p>
+        <p><strong>Episodes:</strong> ${podcast.episode_count}</p>
+        <p><strong>Created:</strong> ${new Date(podcast.created_at).toLocaleDateString('en-GB')}</p>
+    `;
+    
+    document.getElementById('create-podcast-form').style.display = 'none';
+    document.getElementById('podcast-details').style.display = 'block';
+}
+
+function showCreatePodcast() {
+    document.getElementById('create-podcast-form').style.display = 'block';
+    document.getElementById('podcast-details').style.display = 'none';
+}
+
+function hideCreatePodcast() {
+    document.getElementById('create-podcast-form').style.display = 'none';
+    
+    // Clear form
+    document.getElementById('podcast-title').value = '';
+    document.getElementById('podcast-description').value = '';
+    document.getElementById('podcast-author').value = '';
+    document.getElementById('podcast-email').value = '';
+    document.getElementById('podcast-image').value = '';
+    
+    // Reset form title and button
+    document.querySelector('#create-podcast-form h5').textContent = 'Create New Podcast';
+    document.querySelector('#create-podcast-form button[type="submit"]').textContent = 'Create';
+}
+
+function createPodcast(event) {
+    event.preventDefault();
+    
+    const formData = new FormData();
+    formData.append('title', document.getElementById('podcast-title').value);
+    formData.append('description', document.getElementById('podcast-description').value);
+    formData.append('author', document.getElementById('podcast-author').value);
+    formData.append('email', document.getElementById('podcast-email').value);
+    formData.append('category', document.getElementById('podcast-category').value);
+    
+    const imageFile = document.getElementById('podcast-image').files[0];
+    if (imageFile) {
+        formData.append('image', imageFile);
+    }
+    
+    // Determine if this is an edit or create
+    const isEdit = selectedPodcast && document.querySelector('#create-podcast-form h5').textContent === 'Edit Podcast';
+    const url = isEdit ? `/api/podcasts/${selectedPodcast.id}` : '/api/podcasts';
+    const method = isEdit ? 'PUT' : 'POST';
+    
+    fetch(url, {
+        method: method,
+        body: formData
+    })
+    .then(response => response.json())
+    .then(result => {
+        if (result.success) {
+            hideCreatePodcast();
+            loadPodcasts();
+        } else {
+            alert('Error: ' + (result.error || 'Unknown error'));
+        }
+    })
+    .catch(error => {
+        alert('Error: ' + error);
+    });
+}
+
+function editPodcast() {
+    if (!selectedPodcast) return;
+    
+    // Populate form with current podcast data
+    document.getElementById('podcast-title').value = selectedPodcast.title;
+    document.getElementById('podcast-description').value = selectedPodcast.description || '';
+    document.getElementById('podcast-author').value = selectedPodcast.author || '';
+    document.getElementById('podcast-email').value = selectedPodcast.email || '';
+    document.getElementById('podcast-category').value = selectedPodcast.category || 'Technology';
+    
+    // Change form title and button
+    document.querySelector('#create-podcast-form h5').textContent = 'Edit Podcast';
+    document.querySelector('#create-podcast-form button[type="submit"]').textContent = 'Update';
+    
+    // Show form, hide details
+    document.getElementById('create-podcast-form').style.display = 'block';
+    document.getElementById('podcast-details').style.display = 'none';
+}
+
+function viewPublicPodcast() {
+    if (selectedPodcast) {
+        window.open(`/podcasts/${selectedPodcast.uuid}`, '_blank');
+    }
+}
+
+function copyRSSLink() {
+    if (selectedPodcast) {
+        const rssUrl = `http://localhost:5000/podcasts/${selectedPodcast.uuid}/rss`;
+        navigator.clipboard.writeText(rssUrl).then(() => {
+            alert('RSS URL copied to clipboard!');
+        });
+    }
+}
+
+function deletePodcast() {
+    if (!selectedPodcast) return;
+    
+    const podcastTitle = selectedPodcast.title;
+    const episodeCount = selectedPodcast.episode_count;
+    
+    // Strong confirmation message
+    let confirmMessage = `⚠️ DANGER: DELETE PODCAST ⚠️\n\n`;
+    confirmMessage += `You are about to PERMANENTLY DELETE the podcast:\n`;
+    confirmMessage += `"${podcastTitle}"\n\n`;
+    
+    if (episodeCount > 0) {
+        confirmMessage += `This will also DELETE ${episodeCount} episode(s) from this podcast.\n\n`;
+    }
+    
+    confirmMessage += `This action CANNOT be undone!\n\n`;
+    confirmMessage += `Type "DELETE" to confirm:`;
+    
+    const userInput = prompt(confirmMessage);
+    
+    if (userInput === "DELETE") {
+        // Second confirmation
+        const finalConfirm = confirm(`Final confirmation: Are you absolutely sure you want to delete "${podcastTitle}" and all its episodes? This cannot be undone!`);
+        
+        if (finalConfirm) {
+            fetch(`/api/podcasts/${selectedPodcast.id}`, {
+                method: 'DELETE'
+            })
+            .then(response => response.json())
+            .then(result => {
+                if (result.success) {
+                    alert(`Podcast "${podcastTitle}" has been deleted.`);
+                    loadPodcasts();
+                    document.getElementById('podcast-details').style.display = 'none';
+                    selectedPodcast = null;
+                } else {
+                    alert('Error deleting podcast: ' + (result.error || 'Unknown error'));
+                }
+            })
+            .catch(error => {
+                alert('Error deleting podcast: ' + error);
+            });
+        }
+    } else if (userInput !== null) {
+        alert('Deletion cancelled. You must type "DELETE" exactly to confirm.');
+    }
+}
+
+// Load podcasts on page load
+loadPodcasts();
+</script>
+{% endblock %}

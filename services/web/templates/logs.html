@@ -1,0 +1,123 @@
+{% extends "base.html" %}
+
+{% block title %}System Logs{% endblock %}
+
+{% block content %}
+<div class="container-fluid h-100">
+    <!-- Top Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="#">
+                <i class="fas fa-radio"></i> WebRadio9
+            </a>
+            <div class="navbar-nav ms-auto">
+                <a class="nav-link" href="{{ url_for('logout') }}">
+                    <i class="fas fa-sign-out-alt"></i> Logout
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="row h-100">
+        <!-- Left Sidebar -->
+        <div class="col-md-2 bg-light sidebar">
+            <div class="list-group list-group-flush">
+                <a href="{{ url_for('index') }}" class="list-group-item list-group-item-action">
+                    <i class="fas fa-tachometer-alt"></i> Dashboard
+                </a>
+                <a href="{{ url_for('stations') }}" class="list-group-item list-group-item-action">
+                    <i class="fas fa-broadcast-tower"></i> Stations
+                </a>
+                <a href="{{ url_for('recordings') }}" class="list-group-item list-group-item-action">
+                    <i class="fas fa-microphone"></i> Recordings
+                </a>
+                <a href="{{ url_for('podcasts') }}" class="list-group-item list-group-item-action">
+                    <i class="fas fa-podcast"></i> Podcasts
+                </a>
+                <a href="{{ url_for('logs') }}" class="list-group-item list-group-item-action active">
+                    <i class="fas fa-file-alt"></i> Logs
+                </a>
+                <a href="{{ url_for('services') }}" class="list-group-item list-group-item-action">
+                    <i class="fas fa-cogs"></i> Services
+                </a>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="col-md-10">
+            <div class="p-3">
+            <h2>System Logs</h2>
+            
+            <div class="mb-3">
+                <label for="lineCount" class="form-label">Lines to show:</label>
+                <select id="lineCount" class="form-select" style="width: auto; display: inline-block;">
+                    <option value="50">50</option>
+                    <option value="100" selected>100</option>
+                    <option value="200">200</option>
+                    <option value="500">500</option>
+                </select>
+                <button id="refreshLogs" class="btn btn-primary ms-2">Refresh</button>
+                <button id="autoRefresh" class="btn btn-outline-secondary ms-2">Auto Refresh: OFF</button>
+            </div>
+            
+            <div class="card">
+                <div class="card-body">
+                    <pre id="logContent" style="height: 600px; overflow-y: auto; background: #f8f9fa; padding: 15px; font-family: 'Courier New', monospace; font-size: 12px;"></pre>
+                </div>
+            </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let autoRefreshInterval = null;
+let isAutoRefresh = false;
+
+function loadLogs() {
+    const lines = document.getElementById('lineCount').value;
+    
+    fetch(`/api/logs?lines=${lines}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                document.getElementById('logContent').textContent = 'Error: ' + data.error;
+            } else {
+                document.getElementById('logContent').textContent = data.lines.join('\n');
+                // Auto-scroll to bottom
+                const logContent = document.getElementById('logContent');
+                logContent.scrollTop = logContent.scrollHeight;
+            }
+        })
+        .catch(error => {
+            document.getElementById('logContent').textContent = 'Error loading logs: ' + error;
+        });
+}
+
+function toggleAutoRefresh() {
+    const button = document.getElementById('autoRefresh');
+    
+    if (isAutoRefresh) {
+        clearInterval(autoRefreshInterval);
+        button.textContent = 'Auto Refresh: OFF';
+        button.classList.remove('btn-success');
+        button.classList.add('btn-outline-secondary');
+        isAutoRefresh = false;
+    } else {
+        autoRefreshInterval = setInterval(loadLogs, 3000); // Refresh every 3 seconds
+        button.textContent = 'Auto Refresh: ON';
+        button.classList.remove('btn-outline-secondary');
+        button.classList.add('btn-success');
+        isAutoRefresh = true;
+    }
+}
+
+document.getElementById('refreshLogs').addEventListener('click', loadLogs);
+document.getElementById('autoRefresh').addEventListener('click', toggleAutoRefresh);
+document.getElementById('lineCount').addEventListener('change', loadLogs);
+
+// Load logs on page load
+loadLogs();
+</script>
+{% endblock %}

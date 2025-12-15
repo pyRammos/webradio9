@@ -1,0 +1,209 @@
+{% extends "base.html" %}
+
+{% block title %}Service Management{% endblock %}
+
+{% block content %}
+<div class="container-fluid h-100">
+    <!-- Top Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="#">
+                <i class="fas fa-radio"></i> WebRadio9
+            </a>
+            <div class="navbar-nav ms-auto">
+                <a class="nav-link" href="{{ url_for('logout') }}">
+                    <i class="fas fa-sign-out-alt"></i> Logout
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="row h-100">
+        <!-- Left Sidebar -->
+        <div class="col-md-2 bg-light sidebar">
+            <div class="list-group list-group-flush">
+                <a href="{{ url_for('index') }}" class="list-group-item list-group-item-action">
+                    <i class="fas fa-tachometer-alt"></i> Dashboard
+                </a>
+                <a href="{{ url_for('stations') }}" class="list-group-item list-group-item-action">
+                    <i class="fas fa-broadcast-tower"></i> Stations
+                </a>
+                <a href="{{ url_for('recordings') }}" class="list-group-item list-group-item-action">
+                    <i class="fas fa-microphone"></i> Recordings
+                </a>
+                <a href="{{ url_for('podcasts') }}" class="list-group-item list-group-item-action">
+                    <i class="fas fa-podcast"></i> Podcasts
+                </a>
+                <a href="{{ url_for('logs') }}" class="list-group-item list-group-item-action">
+                    <i class="fas fa-file-alt"></i> Logs
+                </a>
+                <a href="{{ url_for('services') }}" class="list-group-item list-group-item-action active">
+                    <i class="fas fa-cogs"></i> Services
+                </a>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="col-md-10">
+            <div class="p-3">
+                <h2>Service Management</h2>
+                
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5>Service Health Status</h5>
+                            </div>
+                            <div class="card-body">
+                                <div id="serviceStatus">
+                                    <div class="text-center">
+                                        <div class="spinner-border" role="status">
+                                            <span class="visually-hidden">Loading...</span>
+                                        </div>
+                                        <p>Checking service status...</p>
+                                    </div>
+                                </div>
+                                <button id="refreshStatus" class="btn btn-secondary mt-3">Refresh Status</button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5>Service Controls</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="mb-3">
+                                    <button id="restartAll" class="btn btn-warning btn-lg w-100 mb-2">
+                                        <i class="fas fa-sync-alt"></i> Restart All Services
+                                    </button>
+                                </div>
+                                
+                                <h6>Individual Services:</h6>
+                                <div class="row">
+                                    <div class="col-6 mb-2">
+                                        <button class="btn btn-outline-primary btn-sm w-100" onclick="restartService('web')">
+                                            <i class="fas fa-globe"></i> Web
+                                        </button>
+                                    </div>
+                                    <div class="col-6 mb-2">
+                                        <button class="btn btn-outline-primary btn-sm w-100" onclick="restartService('scheduler')">
+                                            <i class="fas fa-clock"></i> Scheduler
+                                        </button>
+                                    </div>
+                                    <div class="col-6 mb-2">
+                                        <button class="btn btn-outline-primary btn-sm w-100" onclick="restartService('recording')">
+                                            <i class="fas fa-microphone"></i> Recording
+                                        </button>
+                                    </div>
+                                    <div class="col-6 mb-2">
+                                        <button class="btn btn-outline-primary btn-sm w-100" onclick="restartService('station')">
+                                            <i class="fas fa-broadcast-tower"></i> Station
+                                        </button>
+                                    </div>
+                                    <div class="col-6 mb-2">
+                                        <button class="btn btn-outline-primary btn-sm w-100" onclick="restartService('storage')">
+                                            <i class="fas fa-database"></i> Storage
+                                        </button>
+                                    </div>
+                                    <div class="col-6 mb-2">
+                                        <button class="btn btn-outline-primary btn-sm w-100" onclick="restartService('notification')">
+                                            <i class="fas fa-bell"></i> Notification
+                                        </button>
+                                    </div>
+                                    <div class="col-12 mb-2">
+                                        <button class="btn btn-outline-primary btn-sm w-100" onclick="restartService('podcast')">
+                                            <i class="fas fa-podcast"></i> Podcast
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function loadServiceStatus() {
+    fetch('/api/system/health')
+        .then(response => response.json())
+        .then(data => {
+            let html = '<div class="list-group">';
+            
+            data.forEach(service => {
+                const statusClass = service.status === 'ready' ? 'success' : 
+                                  service.status === 'running' ? 'warning' : 'danger';
+                const statusIcon = service.status === 'ready' ? 'check-circle' : 
+                                 service.status === 'running' ? 'clock' : 'exclamation-triangle';
+                
+                html += `
+                    <div class="list-group-item d-flex justify-content-between align-items-center">
+                        <div>
+                            <strong>${service.name}</strong>
+                            <small class="text-muted d-block">Status: ${service.health_status || 'N/A'}</small>
+                        </div>
+                        <span class="badge bg-${statusClass}">
+                            <i class="fas fa-${statusIcon}"></i> ${service.status}
+                        </span>
+                    </div>
+                `;
+            });
+            
+            html += '</div>';
+            document.getElementById('serviceStatus').innerHTML = html;
+        })
+        .catch(error => {
+            document.getElementById('serviceStatus').innerHTML = 
+                '<div class="alert alert-danger">Error loading service status: ' + error + '</div>';
+        });
+}
+
+function restartService(serviceName) {
+    if (!confirm(`Are you sure you want to restart the ${serviceName} service?`)) {
+        return;
+    }
+    
+    fetch('/api/services/restart', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ service: serviceName })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert(data.message);
+            // Refresh status after a delay
+            setTimeout(loadServiceStatus, 3000);
+        } else {
+            alert('Error: ' + data.error);
+        }
+    })
+    .catch(error => {
+        alert('Error restarting service: ' + error);
+    });
+}
+
+function restartAllServices() {
+    if (!confirm('Are you sure you want to restart ALL services? This will temporarily interrupt all operations.')) {
+        return;
+    }
+    
+    restartService('all');
+}
+
+document.getElementById('refreshStatus').addEventListener('click', loadServiceStatus);
+document.getElementById('restartAll').addEventListener('click', restartAllServices);
+
+// Load status on page load
+loadServiceStatus();
+
+// Auto-refresh every 10 seconds
+setInterval(loadServiceStatus, 10000);
+</script>
+{% endblock %}

@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WebRadio9</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="/static/css/style.css" rel="stylesheet">
+</head>
+<body>
+    
+<div class="container-fluid h-100">
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="/">
+                <i class="fas fa-radio"></i> WebRadio9
+            </a>
+            <div class="navbar-nav ms-auto">
+                <a class="nav-link" href="/logout">
+                    <i class="fas fa-sign-out-alt"></i> Logout
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="row h-100">
+        <div class="col-md-2 bg-light sidebar">
+            <div class="list-group list-group-flush">
+                <a href="/" class="list-group-item list-group-item-action">
+                    <i class="fas fa-tachometer-alt"></i> Dashboard
+                </a>
+                <a href="/stations" class="list-group-item list-group-item-action">
+                    <i class="fas fa-broadcast-tower"></i> Stations
+                </a>
+                <a href="/recordings" class="list-group-item list-group-item-action">
+                    <i class="fas fa-microphone"></i> Scheduled Recordings
+                </a>
+                <a href="/recording-history" class="list-group-item list-group-item-action active">
+                    <i class="fas fa-history"></i> Completed Recordings
+                </a>
+                <a href="/podcasts" class="list-group-item list-group-item-action">
+                    <i class="fas fa-podcast"></i> Podcasts
+                </a>
+            </div>
+        </div>
+
+        <div class="col-md-10">
+            <div class="p-4">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <div>
+                        <h4 class="mb-1">Completed Recordings</h4>
+                        <p class="text-muted mb-0">View and manage completed recordings</p>
+                    </div>
+                    <div class="btn-group">
+                        <button class="btn btn-outline-primary" onclick="downloadSelected()" id="download-btn" disabled>
+                            <i class="fas fa-download me-2"></i>Download Selected
+                        </button>
+                        <button class="btn btn-outline-danger" onclick="deleteSelected()" id="delete-btn" disabled>
+                            <i class="fas fa-trash me-2"></i>Delete Selected
+                        </button>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th width="40">
+                                            <input type="checkbox" id="select-all" onchange="toggleSelectAll()">
+                                        </th>
+                                        <th class="sortable" onclick="sortBy('name')">
+                                            Name <i class="fas fa-sort" id="sort-name"></i>
+                                        </th>
+                                        <th class="sortable" onclick="sortBy('start_time')">
+                                            Date & Time <i class="fas fa-sort" id="sort-start_time"></i>
+                                        </th>
+                                        <th class="sortable" onclick="sortBy('status')">
+                                            Status <i class="fas fa-sort" id="sort-status"></i>
+                                        </th>
+                                        <th class="sortable" onclick="sortBy('format')">
+                                            Format <i class="fas fa-sort" id="sort-format"></i>
+                                        </th>
+                                        <th class="sortable" onclick="sortBy('file_size')">
+                                            Size <i class="fas fa-sort" id="sort-file_size"></i>
+                                        </th>
+                                        <th width="100">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="recordings-table">
+                                    <!-- Will be loaded via JavaScript -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Audio Player Modal -->
+<div class="modal fade" id="audioModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="audioModalTitle">Play Recording</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <audio id="audioPlayer" controls style="width: 100%;" preload="metadata">
+                    Your browser does not support the audio element.
+                </audio>
+                <div id="audioError" class="alert alert-danger mt-2" style="display: none;">
+                    Error loading audio file. Please try again.
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let recordings = [];
+let sortField = 'start_time';
+let sortDirection = 'desc';
+
+function loadRecordings() {
+    fetch('/api/recordings/history')
+        .then(response => response.json())
+        .then(data => {
+            recordings = data;
+            sortRecordings();
+            renderTable();
+        })
+        .catch(error => {
+            console.error('Error loading recordings:', error);
+            document.getElementById('recordings-table').innerHTML = 
+                '<tr><td colspan="7" class="text-center text-danger">Error loading recordings</td></tr>';
+        });
+}
+
+function sortBy(field) {
+    if (sortField === field) {
+        sortDirection = sortDirection === 'asc' ? 'desc' : 'asc';
+    } else {
+        sortField = field;
+        sortDirection = 'asc';
+    }
+    
+    // Update sort icons
+    document.querySelectorAll('.sortable i').forEach(icon => {
+        icon.className = 'fas fa-sort';
+    });
+    
+    const icon = document.getElementById(`sort-${field}`);
+    icon.className = sortDirection === 'asc' ? 'fas fa-sort-up' : 'fas fa-sort-down';
+    
+    sortRecordings();
+    renderTable();
+}
+
+function sortRecordings() {
+    recordings.sort((a, b) => {
+        let aVal = a[sortField];
+        let bVal = b[sortField];
+        
+        if (sortField === 'start_time') {
+            aVal = new Date(aVal);
+            bVal = new Date(bVal);
+        } else if (sortField === 'file_size') {
+            aVal = aVal || 0;
+            bVal = bVal || 0;
+        } else if (typeof aVal === 'string') {
+            aVal = aVal.toLowerCase();
+            bVal = bVal.toLowerCase();
+        }
+        
+        if (aVal < bVal) return sortDirection === 'asc' ? -1 : 1;
+        if (aVal > bVal) return sortDirection === 'asc' ? 1 : -1;
+        return 0;
+    });
+}
+
+function renderTable() {
+    const tbody = document.getElementById('recordings-table');
+    tbody.innerHTML = '';
+    
+    if (recordings.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted py-4">No completed recordings</td></tr>';
+        return;
+    }
+    
+    recordings.forEach(recording => {
+        const row = document.createElement('tr');
+        const startTime = new Date(recording.start_time).toLocaleString('en-GB');
+        const fileSize = recording.file_size ? formatFileSize(recording.file_size) : '-';
+        const statusBadge = getStatusBadge(recording.status);
+        
+        row.innerHTML = `
+            <td>
+                <input type="checkbox" class="recording-checkbox" value="${recording.id}" onchange="updateBulkButtons()">
+            </td>
+            <td>${recording.file_path ? recording.file_path.split('/').pop() : recording.name}</td>
+            <td>${startTime}</td>
+            <td>${statusBadge}</td>
+            <td>${recording.format || '-'}</td>
+            <td>${fileSize}</td>
+            <td>
+                <div class="btn-group btn-group-sm">
+                    ${recording.status === 'complete' && recording.file_path ? 
+                        `<button class="btn btn-outline-success" onclick="playRecording(${recording.id}, '${recording.name}')" title="Listen">
+                            <i class="fas fa-play"></i>
+                        </button>
+                        <button class="btn btn-outline-primary" onclick="downloadRecording(${recording.id})" title="Download">
+                            <i class="fas fa-download"></i>
+                        </button>` : ''}
+                    <button class="btn btn-outline-danger" onclick="deleteRecording(${recording.id})" title="Delete">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+            </td>
+        `;
+        tbody.appendChild(row);
+    });
+}
+
+function getStatusBadge(status) {
+    const badges = {
+        'complete': '<span class="badge bg-success">Completed</span>',
+        'failed': '<span class="badge bg-danger">Failed</span>',
+        'cancelled': '<span class="badge bg-secondary">Cancelled</span>',
+        'recording': '<span class="badge bg-primary">Recording</span>'
+    };
+    return badges[status] || `<span class="badge bg-secondary">${status}</span>`;
+}
+
+function formatFileSize(bytes) {
+    if (bytes === 0) return '0 B';
+    const k = 1024;
+    const sizes = ['B', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+}
+
+function toggleSelectAll() {
+    const selectAll = document.getElementById('select-all');
+    const checkboxes = document.querySelectorAll('.recording-checkbox');
+    
+    checkboxes.forEach(checkbox => {
+        checkbox.checked = selectAll.checked;
+    });
+    
+    updateBulkButtons();
+}
+
+function updateBulkButtons() {
+    const selected = document.querySelectorAll('.recording-checkbox:checked');
+    const downloadBtn = document.getElementById('download-btn');
+    const deleteBtn = document.getElementById('delete-btn');
+    
+    downloadBtn.disabled = selected.length === 0;
+    deleteBtn.disabled = selected.length === 0;
+    
+    // Update select all checkbox
+    const allCheckboxes = document.querySelectorAll('.recording-checkbox');
+    const selectAll = document.getElementById('select-all');
+    selectAll.indeterminate = selected.length > 0 && selected.length < allCheckboxes.length;
+    selectAll.checked = selected.length === allCheckboxes.length && allCheckboxes.length > 0;
+}
+
+function downloadSelected() {
+    const selected = Array.from(document.querySelectorAll('.recording-checkbox:checked')).map(cb => cb.value);
+    if (selected.length === 0) return;
+    
+    // Create form for bulk download
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = '/api/recordings/bulk-download';
+    
+    const input = document.createElement('input');
+    input.type = 'hidden';
+    input.name = 'recording_ids';
+    input.value = JSON.stringify(selected);
+    form.appendChild(input);
+    
+    document.body.appendChild(form);
+    form.submit();
+    document.body.removeChild(form);
+}
+
+function deleteSelected() {
+    const selected = Array.from(document.querySelectorAll('.recording-checkbox:checked')).map(cb => cb.value);
+    if (selected.length === 0) return;
+    
+    if (confirm(`Are you sure you want to delete ${selected.length} recording(s)?`)) {
+        fetch('/api/recordings/bulk-delete', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({recording_ids: selected})
+        })
+        .then(response => response.json())
+        .then(result => {
+            if (result.success) {
+                loadRecordings();
+            } else {
+                alert('Error: ' + (result.error || 'Unknown error'));
+            }
+        })
+        .catch(error => {
+            alert('Error: ' + error.message);
+        });
+    }
+}
+
+function downloadRecording(id) {
+    window.location.href = `/api/recordings/${id}/download`;
+}
+
+function playRecording(recordingId, name) {
+    const modal = new bootstrap.Modal(document.getElementById('audioModal'));
+    const audioPlayer = document.getElementById('audioPlayer');
+    const errorDiv = document.getElementById('audioError');
+    
+    document.getElementById('audioModalTitle').textContent = name;
+    
+    // Hide any previous errors
+    errorDiv.style.display = 'none';
+    
+    // Set up error handling
+    audioPlayer.onerror = function() {
+        errorDiv.style.display = 'block';
+    };
+    
+    audioPlayer.src = `/api/recordings/${recordingId}/stream`;
+    
+    // Show modal first
+    modal.show();
+    
+    // Auto-play when modal is shown
+    document.getElementById('audioModal').addEventListener('shown.bs.modal', function() {
+        audioPlayer.load();
+        
+        // Wait a moment for the audio to load, then try to play
+        setTimeout(() => {
+            audioPlayer.play().catch(error => {
+                console.log('Auto-play failed (likely browser policy):', error);
+                // Auto-play blocked - user will need to click play manually
+            });
+        }, 500);
+    }, { once: true });
+    
+    // Stop audio when modal is closed
+    document.getElementById('audioModal').addEventListener('hidden.bs.modal', function() {
+        audioPlayer.pause();
+        audioPlayer.currentTime = 0;
+    }, { once: true });
+}
+
+function deleteRecording(id) {
+    if (confirm('Are you sure you want to delete this recording?')) {
+        fetch(`/api/recordings/${id}`, {method: 'DELETE'})
+            .then(() => loadRecordings());
+    }
+}
+
+// Load data on page load
+loadRecordings();
+setInterval(loadRecordings, 30000);
+</script>
+
+<style>
+.sortable {
+    cursor: pointer;
+    user-select: none;
+}
+.sortable:hover {
+    background-color: #f8f9fa;
+}
+</style>
+
+    
+    <footer class="bg-light text-center py-2 mt-auto">
+        <div class="container">
+            <span id="current-time"></span>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        function updateTime() {
+            // Get server timezone from config
+            fetch('/api/timezone')
+                .then(response => response.json())
+                .then(data => {
+                    const serverTime = new Date().toLocaleString('en-GB', { 
+                        timeZone: data.timezone,
+                        hour12: false, 
+                        hour: '2-digit', 
+                        minute: '2-digit' 
+                    });
+                    document.getElementById('current-time').textContent = `${serverTime} (${data.timezone})`;
+                })
+                .catch(() => {
+                    // Fallback to local time
+                    const now = new Date();
+                    const timeString = now.toLocaleTimeString('en-GB', { 
+                        hour12: false, 
+                        hour: '2-digit', 
+                        minute: '2-digit' 
+                    });
+                    document.getElementById('current-time').textContent = timeString;
+                });
+        }
+        
+        updateTime();
+        setInterval(updateTime, 60000);
+    </script>
+</body>
+</html>

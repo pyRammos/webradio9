@@ -1,0 +1,372 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container-fluid h-100">
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="{{ url_for('index') }}">
+                <i class="fas fa-radio"></i> WebRadio9
+            </a>
+            <div class="navbar-nav ms-auto">
+                <a class="nav-link" href="{{ url_for('logout') }}">
+                    <i class="fas fa-sign-out-alt"></i> Logout
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="row h-100">
+        <div class="col-md-2 bg-light sidebar">
+            <div class="list-group list-group-flush">
+                <a href="{{ url_for('index') }}" class="list-group-item list-group-item-action">
+                    <i class="fas fa-tachometer-alt"></i> Dashboard
+                </a>
+                <a href="{{ url_for('stations') }}" class="list-group-item list-group-item-action">
+                    <i class="fas fa-broadcast-tower"></i> Stations
+                </a>
+                <a href="{{ url_for('recordings') }}" class="list-group-item list-group-item-action active">
+                    <i class="fas fa-microphone"></i> Scheduled Recordings
+                </a>
+                <a href="{{ url_for('recording_history') }}" class="list-group-item list-group-item-action">
+                    <i class="fas fa-history"></i> Completed Recordings
+                </a>
+                <a href="{{ url_for('podcasts') }}" class="list-group-item list-group-item-action">
+                    <i class="fas fa-podcast"></i> Podcasts
+                </a>
+            </div>
+        </div>
+
+        <div class="col-md-10">
+            <div class="p-4">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <div>
+                        <h4 class="mb-1">Scheduled Recordings</h4>
+                        <p class="text-muted mb-0">Manage scheduled and recurring recordings</p>
+                    </div>
+                    <button class="btn btn-primary" onclick="showScheduleForm()">
+                        <i class="fas fa-plus me-2"></i> Schedule Recording
+                    </button>
+                </div>
+
+                <!-- Tabs -->
+                <ul class="nav nav-tabs mb-4" id="recordingTabs">
+                    <li class="nav-item">
+                        <button class="nav-link active" id="recurring-tab" onclick="showTab('recurring')">
+                            <i class="fas fa-repeat me-2"></i>Recurring
+                        </button>
+                    </li>
+                    <li class="nav-item">
+                        <button class="nav-link" id="oneoff-tab" onclick="showTab('oneoff')">
+                            <i class="fas fa-calendar me-2"></i>One-off
+                        </button>
+                    </li>
+                </ul>
+
+                <!-- Tab Content -->
+                <div id="recurring-content" class="tab-content">
+                    <!-- Recurring recordings will be loaded here -->
+                </div>
+                <div id="oneoff-content" class="tab-content" style="display: none;">
+                    <!-- One-off recordings will be loaded here -->
+                </div>
+
+                <!-- Schedule Recording Form -->
+                <div id="schedule-form" class="card" style="display: none;">
+                    <div class="card-header">
+                        <h5 class="mb-0" id="form-title">Schedule New Recording</h5>
+                    </div>
+                    <div class="card-body">
+                        <form onsubmit="submitRecording(event)">
+                            <input type="hidden" id="recording-id">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">Recording Name</label>
+                                        <input type="text" class="form-control" id="recording-name" required>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Station</label>
+                                        <select class="form-control" id="station-select" required>
+                                            <option value="">Select Station</option>
+                                        </select>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Start Time</label>
+                                        <input type="datetime-local" class="form-control" id="start-time" required>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Duration (minutes)</label>
+                                        <input type="number" class="form-control" id="duration" value="60" required>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">Format</label>
+                                        <select class="form-control" id="format">
+                                            <option value="mp3">MP3</option>
+                                            <option value="aac">AAC</option>
+                                            <option value="m4a">M4A</option>
+                                        </select>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Add to Podcast</label>
+                                        <select class="form-control" id="podcast-select">
+                                            <option value="">No podcast</option>
+                                        </select>
+                                    </div>
+                                    <div class="mb-3">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" id="is-recurring" onchange="toggleRecurrence()">
+                                            <label class="form-check-label">Recurring Recording</label>
+                                        </div>
+                                    </div>
+                                    <div id="recurrence-options" style="display: none;">
+                                        <div class="mb-3">
+                                            <label class="form-label">Repeat</label>
+                                            <select class="form-control" id="recurrence-type">
+                                                <option value="daily">Daily</option>
+                                                <option value="weekdays">Weekdays (Mon-Fri)</option>
+                                                <option value="weekends">Weekends (Sat-Sun)</option>
+                                                <option value="weekly">Weekly</option>
+                                                <option value="monthly">Monthly</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="d-flex justify-content-end">
+                                <button type="button" class="btn btn-secondary me-2" onclick="hideScheduleForm()">Cancel</button>
+                                <button type="submit" class="btn btn-primary" id="submit-btn">Schedule Recording</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let currentTab = 'recurring';
+
+function showTab(tab) {
+    currentTab = tab;
+    
+    // Update tab buttons
+    document.getElementById('recurring-tab').classList.toggle('active', tab === 'recurring');
+    document.getElementById('oneoff-tab').classList.toggle('active', tab === 'oneoff');
+    
+    // Update tab content
+    document.getElementById('recurring-content').style.display = tab === 'recurring' ? 'block' : 'none';
+    document.getElementById('oneoff-content').style.display = tab === 'oneoff' ? 'block' : 'none';
+    
+    loadActiveRecordings();
+}
+
+function loadActiveRecordings() {
+    fetch('/api/recordings/active')
+        .then(response => response.json())
+        .then(recordings => {
+            const recurring = recordings.filter(r => r.is_recurring);
+            const oneoff = recordings.filter(r => !r.is_recurring);
+            
+            renderRecordings('recurring-content', recurring, 'recurring');
+            renderRecordings('oneoff-content', oneoff, 'oneoff');
+        })
+        .catch(error => {
+            console.error('Error loading recordings:', error);
+            document.getElementById(currentTab + '-content').innerHTML = 
+                '<div class="alert alert-danger">Error loading recordings</div>';
+        });
+}
+
+function renderRecordings(containerId, recordings, type) {
+    const container = document.getElementById(containerId);
+    container.innerHTML = '';
+    
+    if (recordings.length === 0) {
+        const message = type === 'recurring' ? 'No recurring recordings' : 'No one-off recordings';
+        container.innerHTML = `
+            <div class="text-center py-5">
+                <i class="fas fa-microphone fa-3x text-muted mb-3"></i>
+                <h5 class="text-muted">${message}</h5>
+                <p class="text-muted">Schedule your first recording to get started</p>
+            </div>
+        `;
+        return;
+    }
+    
+    recordings.forEach(recording => {
+        const nextTime = new Date(recording.start_time).toLocaleString('en-GB');
+        const card = document.createElement('div');
+        card.className = 'card mb-3';
+        card.innerHTML = `
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <h6 class="card-title mb-1">
+                            ${type === 'recurring' ? '<i class="fas fa-repeat text-primary me-2"></i>' : ''}${recording.name}
+                        </h6>
+                        <p class="card-text text-muted mb-2">
+                            ${type === 'recurring' ? 'Next: ' : ''}${nextTime} • ${type === 'recurring' ? recording.recurrence_type + ' • ' : ''}${recording.duration/60}min
+                        </p>
+                        <small class="text-muted">Station: ${recording.station_name || 'Unknown'}</small>
+                    </div>
+                    <div class="btn-group">
+                        <button class="btn btn-outline-primary btn-sm" onclick="editRecording(${recording.id})" title="Edit">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button class="btn btn-outline-danger btn-sm" onclick="deleteRecording(${recording.id})" title="Delete">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+        container.appendChild(card);
+    });
+}
+
+function showScheduleForm() {
+    document.getElementById('recording-id').value = '';
+    document.getElementById('form-title').textContent = 'Schedule New Recording';
+    document.getElementById('submit-btn').textContent = 'Schedule Recording';
+    document.getElementById('schedule-form').style.display = 'block';
+    loadStations();
+    loadPodcasts();
+    
+    // Set default start time (2 minutes from now)
+    const now = new Date();
+    now.setMinutes(now.getMinutes() + 2);
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    const hours = String(now.getHours()).padStart(2, '0');
+    const minutes = String(now.getMinutes()).padStart(2, '0');
+    document.getElementById('start-time').value = `${year}-${month}-${day}T${hours}:${minutes}`;
+}
+
+function hideScheduleForm() {
+    document.getElementById('schedule-form').style.display = 'none';
+    // Reset form
+    document.querySelector('#schedule-form form').reset();
+    document.getElementById('recurrence-options').style.display = 'none';
+}
+
+function toggleRecurrence() {
+    const isRecurring = document.getElementById('is-recurring').checked;
+    document.getElementById('recurrence-options').style.display = isRecurring ? 'block' : 'none';
+}
+
+function loadStations() {
+    return fetch('/api/stations')
+        .then(response => response.json())
+        .then(stations => {
+            const select = document.getElementById('station-select');
+            select.innerHTML = '<option value="">Select Station</option>';
+            stations.filter(s => s.is_valid).forEach(station => {
+                const option = document.createElement('option');
+                option.value = station.id;
+                option.textContent = station.name;
+                select.appendChild(option);
+            });
+        });
+}
+
+function loadPodcasts() {
+    return fetch('/api/podcasts')
+        .then(response => response.json())
+        .then(podcasts => {
+            const select = document.getElementById('podcast-select');
+            select.innerHTML = '<option value="">No podcast</option>';
+            podcasts.forEach(podcast => {
+                const option = document.createElement('option');
+                option.value = podcast.id;
+                option.textContent = podcast.title;
+                select.appendChild(option);
+            });
+        });
+}
+
+function submitRecording(event) {
+    event.preventDefault();
+    
+    const recordingId = document.getElementById('recording-id').value;
+    const isEdit = recordingId !== '';
+    
+    const data = {
+        name: document.getElementById('recording-name').value,
+        station_id: parseInt(document.getElementById('station-select').value),
+        start_time: document.getElementById('start-time').value,
+        duration: parseInt(document.getElementById('duration').value),
+        format: document.getElementById('format').value,
+        podcast_id: document.getElementById('podcast-select').value || null,
+        is_recurring: document.getElementById('is-recurring').checked,
+        recurrence_type: document.getElementById('recurrence-type').value
+    };
+    
+    const url = isEdit ? `/api/recordings/${recordingId}` : '/api/recordings';
+    const method = isEdit ? 'PUT' : 'POST';
+    
+    fetch(url, {
+        method: method,
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(result => {
+        if (result.success) {
+            hideScheduleForm();
+            loadActiveRecordings();
+        } else {
+            alert('Error: ' + (result.error || 'Unknown error'));
+        }
+    })
+    .catch(error => {
+        alert('Error: ' + error.message);
+    });
+}
+
+function editRecording(id) {
+    fetch(`/api/recordings/${id}`)
+        .then(response => response.json())
+        .then(recording => {
+            document.getElementById('recording-id').value = recording.id;
+            document.getElementById('form-title').textContent = 'Edit Recording';
+            document.getElementById('submit-btn').textContent = 'Update Recording';
+            document.getElementById('schedule-form').style.display = 'block';
+            
+            // Load dropdowns first, then populate form
+            Promise.all([loadStations(), loadPodcasts()]).then(() => {
+                // Now set the form values after dropdowns are loaded
+                document.getElementById('recording-name').value = recording.name;
+                document.getElementById('station-select').value = recording.station_id;
+                document.getElementById('start-time').value = recording.start_time.slice(0, 16);
+                document.getElementById('duration').value = recording.duration / 60;
+                document.getElementById('format').value = recording.format || 'mp3';
+                document.getElementById('podcast-select').value = recording.podcast_id || '';
+                document.getElementById('is-recurring').checked = recording.is_recurring;
+                
+                if (recording.is_recurring) {
+                    document.getElementById('recurrence-type').value = recording.recurrence_type;
+                    document.getElementById('recurrence-options').style.display = 'block';
+                }
+            });
+        })
+        .catch(error => {
+            alert('Error loading recording: ' + error.message);
+        });
+}
+
+function deleteRecording(id) {
+    if (confirm('Are you sure you want to delete this recording?')) {
+        fetch(`/api/recordings/${id}`, {method: 'DELETE'})
+            .then(() => loadActiveRecordings());
+    }
+}
+
+// Load data on page load
+loadActiveRecordings();
+setInterval(loadActiveRecordings, 30000);
+</script>
+{% endblock %}

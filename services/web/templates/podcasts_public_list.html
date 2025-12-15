@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Podcasts - WebRadio9</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="container mt-4">
+        <div class="row">
+            <div class="col-md-10 mx-auto">
+                <div class="text-center mb-4">
+                    <h1><i class="fas fa-podcast"></i> WebRadio9 Podcasts</h1>
+                    <p class="lead">Available podcast feeds</p>
+                </div>
+                
+                {% if podcasts %}
+                <div class="row">
+                    {% for item in podcasts %}
+                    <div class="col-md-6 mb-4">
+                        <div class="card h-100">
+                            {% if item.podcast.image_url %}
+                            <img src="{{ item.podcast.image_url }}" class="card-img-top" style="height: 200px; object-fit: cover;" alt="{{ item.podcast.title }}">
+                            {% endif %}
+                            <div class="card-body">
+                                <h5 class="card-title">{{ item.podcast.title }}</h5>
+                                {% if item.podcast.description %}
+                                <p class="card-text">{{ item.podcast.description[:150] }}{% if item.podcast.description|length > 150 %}...{% endif %}</p>
+                                {% endif %}
+                                <p class="card-text">
+                                    <small class="text-muted">
+                                        {{ item.episode_count }} episode{{ 's' if item.episode_count != 1 else '' }}
+                                        {% if item.podcast.author %} • By {{ item.podcast.author }}{% endif %}
+                                    </small>
+                                </p>
+                            </div>
+                            <div class="card-footer">
+                                <div class="btn-group w-100" role="group">
+                                    <a href="{{ url_for('podcast_public', podcast_uuid=item.podcast.uuid) }}" class="btn btn-primary">
+                                        <i class="fas fa-play"></i> Listen
+                                    </a>
+                                    <a href="{{ url_for('podcast_rss', podcast_uuid=item.podcast.uuid) }}" class="btn btn-outline-primary">
+                                        <i class="fas fa-rss"></i> RSS
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="text-center">
+                    <div class="alert alert-info">
+                        <h4><i class="fas fa-info-circle"></i> No Podcasts Available</h4>
+                        <p>There are currently no podcasts with episodes available.</p>
+                    </div>
+                </div>
+                {% endif %}
+                
+                <div class="text-center mt-4">
+                    <small class="text-muted">Powered by WebRadio9</small>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
