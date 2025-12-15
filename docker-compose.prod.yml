@@ -16,7 +16,7 @@ services:
       - rabbitmq_password
 
   webradio9:
-    image: pyrammos/webradio9:latest
+    image: teleram/webradio9:latest
     environment:
       - DB_PASSWORD_FILE=/run/secrets/mysql_password
       - RABBITMQ_PASSWORD_FILE=/run/secrets/rabbitmq_password

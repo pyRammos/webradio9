@@ -46,7 +46,7 @@ services:
 
   # WebRadio9 Application
   webradio9:
-    build: .
+    image: teleram/webradio9:latest
     container_name: webradio9-app
     environment:
       - DB_HOST=mysql
