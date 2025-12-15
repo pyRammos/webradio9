@@ -1,0 +1,92 @@
+version: '3.8'
+
+services:
+  # Database
+  mysql:
+    image: mysql:8.0
+    container_name: webradio9-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: webradio_root_pass
+      MYSQL_DATABASE: webradio9
+      MYSQL_USER: webradio
+      MYSQL_PASSWORD: webradio_pass
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./docker/mysql-init:/docker-entrypoint-initdb.d
+    ports:
+      - "3306:3306"
+    networks:
+      - webradio9-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      timeout: 20s
+      retries: 10
+
+  # Message Queue
+  rabbitmq:
+    image: rabbitmq:3.12-management
+    container_name: webradio9-rabbitmq
+    environment:
+      RABBITMQ_DEFAULT_USER: webradio
+      RABBITMQ_DEFAULT_PASS: webradio_pass
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"  # Management UI
+    networks:
+      - webradio9-network
+    restart: unless-stopped
+    healthcheck:
+      test: rabbitmq-diagnostics -q ping
+      interval: 30s
+      timeout: 30s
+      retries: 3
+
+  # WebRadio9 Application
+  webradio9:
+    build: .
+    container_name: webradio9-app
+    environment:
+      - DB_HOST=mysql
+      - DB_PORT=3306
+      - DB_NAME=webradio9
+      - DB_USER=webradio
+      - DB_PASSWORD=webradio_pass
+      - RABBITMQ_HOST=rabbitmq
+      - RABBITMQ_PORT=5672
+      - RABBITMQ_USER=webradio
+      - RABBITMQ_PASSWORD=webradio_pass
+    volumes:
+      - recordings_data:/app/recordings
+      - logs_data:/app/logs
+      - static_data:/app/static
+    ports:
+      - "5000:5000"
+      - "5001-5006:5001-5006"  # Microservices ports
+    networks:
+      - webradio9-network
+    depends_on:
+      mysql:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/api/system/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+volumes:
+  mysql_data:
+  rabbitmq_data:
+  recordings_data:
+  logs_data:
+  static_data:
+
+networks:
+  webradio9-network:
+    driver: bridge

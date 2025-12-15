@@ -1,0 +1,67 @@
+# Git
+.git
+.gitignore
+
+# Python
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.Python
+env
+pip-log.txt
+pip-delete-this-directory.txt
+.tox
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.log
+.git
+.mypy_cache
+.pytest_cache
+.hypothesis
+
+# Virtual Environment
+venv/
+ENV/
+
+# Database files (will be in volumes)
+*.db
+*.sqlite
+*.sqlite3
+
+# Logs (will be in volumes)
+logs/*.log
+
+# Recordings (will be in volumes)
+recordings/
+*.mp3
+*.aac
+*.m4a
+*.wav
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Docker
+Dockerfile*
+docker-compose*
+.dockerignore
+
+# Documentation
+README.md
+*.md
+
+# Tests
+test_*
+*_test.py

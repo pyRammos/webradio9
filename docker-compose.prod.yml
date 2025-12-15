@@ -1,0 +1,34 @@
+version: '3.8'
+
+services:
+  mysql:
+    environment:
+      MYSQL_ROOT_PASSWORD_FILE: /run/secrets/mysql_root_password
+      MYSQL_PASSWORD_FILE: /run/secrets/mysql_password
+    secrets:
+      - mysql_root_password
+      - mysql_password
+
+  rabbitmq:
+    environment:
+      RABBITMQ_DEFAULT_PASS_FILE: /run/secrets/rabbitmq_password
+    secrets:
+      - rabbitmq_password
+
+  webradio9:
+    image: pyrammos/webradio9:latest
+    environment:
+      - DB_PASSWORD_FILE=/run/secrets/mysql_password
+      - RABBITMQ_PASSWORD_FILE=/run/secrets/rabbitmq_password
+      - FLASK_ENV=production
+    secrets:
+      - mysql_password
+      - rabbitmq_password
+
+secrets:
+  mysql_root_password:
+    external: true
+  mysql_password:
+    external: true
+  rabbitmq_password:
+    external: true
