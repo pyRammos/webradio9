@@ -12,7 +12,6 @@ services:
       MYSQL_PASSWORD: webradio_pass
     volumes:
       - mysql_data:/var/lib/mysql
-      - ./docker/mysql-init:/docker-entrypoint-initdb.d
     ports:
       - "3306:3306"
     networks:
@@ -62,6 +61,7 @@ services:
       - recordings_data:/app/recordings
       - logs_data:/app/logs
       - static_data:/app/static
+      - ./config:/app/config
     ports:
       - "5000:5000"
       - "5001-5006:5001-5006"  # Microservices ports

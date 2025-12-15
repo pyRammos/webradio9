@@ -44,6 +44,20 @@ docker build -t teleram/webradio9:latest .
 
 ## Configuration
 
+### Custom Configuration
+Copy the example config and customize:
+```bash
+cp config/settings.cfg.example config/settings.cfg
+# Edit config/settings.cfg with your settings
+```
+
+The `config/` folder is mounted into the container, allowing you to customize:
+- Database settings
+- Authentication credentials  
+- Storage locations
+- Timezone settings
+- Service ports
+
 ### Environment Variables
 - `DB_HOST`: MySQL hostname (default: mysql)
 - `DB_PORT`: MySQL port (default: 3306)
@@ -59,6 +73,7 @@ docker build -t teleram/webradio9:latest .
 - `recordings_data`: Audio recordings storage
 - `logs_data`: Application logs
 - `static_data`: Static files and uploads
+- `config/`: Configuration files (mounted from host)
 - `mysql_data`: Database files
 - `rabbitmq_data`: Message queue data
 
